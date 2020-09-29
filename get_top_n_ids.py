@@ -2,6 +2,9 @@ import click
 import re
 import requests
 from pathlib import Path
+from io import StringIO
+from operator import itemgetter
+import heapq
 
 
 class RemoteUrlOrPath(click.ParamType):
@@ -11,7 +14,7 @@ class RemoteUrlOrPath(click.ParamType):
         self.is_url = False
 
     def convert(self, url, param, ctx):
-        is_local = bool(ctx.params['local'])
+        is_local = bool('local' in ctx.params and ctx.params['local'])
         if is_local:
             self.is_url = re.match(r'^/[A-Za-z0-9/]+(\.[A-Za-z0-9]+)?$', url) and Path(url).exists()
         else:
@@ -43,13 +46,36 @@ def get(local, url, n):
     if local:
         click.echo('Opening file..')
         file = open(url, 'r')
-        click.echo('Sorting...')
+        click.echo('Processing...')
+        n_largest = process_lines(file, n)
+        print_n_largest(n_largest)
         file.close()
+        click.echo('done.')
     else:
         click.echo('Downloading remote file..')
         req = requests.get(url)
-        click.echo(req.status_code)
+        if req.status_code == requests.codes.ok:
+            target_numbers = StringIO(req.text)
+            click.echo('Processing...')
+            n_largest = process_lines(target_numbers, n)
+            print_n_largest(n_largest)
+            click.echo('done.')
+        else:
+            click.echo('request to remote file failed, please try again.')
 
 
+def process_lines(target_numbers, n):
+    target_numbers.read(500)
+    return heapq.nlargest(n,
+                          ((num_id, int(number)) for num_id, number in split_generator(target_numbers.readlines())),
+                          key=itemgetter(1))
 
 
+def print_n_largest(n_largest):
+    for num_id, number in n_largest:
+        click.echo(num_id)
+
+
+def split_generator(lines):
+    for line in lines:
+        yield re.split('\\s+', line.strip())
