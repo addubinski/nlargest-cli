@@ -1,0 +1,5 @@
+__pycache__
+.gitignore
+.git
+GetTopNIds.egg-info
+test_result.txt

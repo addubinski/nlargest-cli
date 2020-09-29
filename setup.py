@@ -10,7 +10,7 @@ setup(
     ],
     entry_points='''
         [console_scripts]
-        get-n-largest=get_top_n_ids:get
+        get-n-largest=get_top_n_ids:get_n_largest
     ''',
     python_requires='>=3.8',
 )

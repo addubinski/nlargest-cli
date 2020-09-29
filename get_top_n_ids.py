@@ -34,12 +34,12 @@ class RemoteUrlOrPath(click.ParamType):
                                     '(must provide absolute path)', is_flag=True)
 @click.argument('url', type=RemoteUrlOrPath(), required=True)
 @click.argument('n', type=click.IntRange(min=0, max=10000), required=True)
-def get(local, url, n):
+def get_n_largest(local, url, n):
     """
-    Print the ids of the N largest numbers in the input file at url/path URL.
+    Prints the ids of the N largest numbers in the target file at url or path URL.
 
-    URL is the http(s) path with a fully qualified domain name of the target file
-     (or absolute path in the local filesystem)
+    URL is the http(s) path containing a fully qualified domain name to the target file
+    (or absolute path in the local filesystem)
 
     N is the number of ids which will be printed to stdout (each id corresponding to the ith largest number in the file)
     """
