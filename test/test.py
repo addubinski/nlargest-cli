@@ -35,8 +35,8 @@ class AllTests(unittest.TestSuite):
 
 if __name__ == '__main__':
     test = AllTests()
-    result = unittest.TestResult()
-    test.run(result)
-    assert len(result.errors) == 0
-    assert len(result.failures) == 0
-    assert result.wasSuccessful()
+    suite_result = unittest.TestResult()
+    test.run(suite_result)
+    assert len(suite_result.errors) == 0
+    assert len(suite_result.failures) == 0
+    assert suite_result.wasSuccessful()
