@@ -16,13 +16,13 @@ class TestInvalidParameters(unittest.TestCase):
 
 class TestInvalidOptions(unittest.TestCase):
 
-    def test_url_missing_https(self):
+    def test_chunk_size_too_small(self):
         runner = CliRunner()
-        result = runner.invoke(get, ['alexander-dubinski.com', '50'])
+        result = runner.invoke(get, ['--chunk-size', '1023', 'https://alexander-dubinski.com', '50'])
         self.assertEqual(result.exit_code, 2)
         self.assertEqual(result.output,
-                         'Usage: get [OPTIONS] URL N\nTry \'get --help\' for help.\n\nError: Invalid value for \'URL\':'
-                         ' alexander-dubinski.com is not a valid url\n')
+                         'Usage: get [OPTIONS] URL N\nTry \'get --help\' for help.\n\nError: Invalid value for \'-c\''
+                         ' / \'--chunk-size\': 1023 is smaller than the minimum valid value 1024.\n')
 
 
 class TestNLargestReporting(unittest.TestCase):
