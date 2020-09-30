@@ -1,53 +1,42 @@
 import unittest
-import subprocess
-import filecmp
-
-
-class TestCLI(unittest.TestCase):
-
-    def test_required_arguments(self):
-
-        result_file = open('test_result.txt', 'w+')
-        process = subprocess.Popen(['get-n-largest'], shell=True, stdout=subprocess.PIPE, stderr=result_file)
-        stdout, _ = process.communicate()
-        self.assertFalse(bool(stdout))
-        self.assertTrue(filecmp.cmp('test_result.txt', 'test_reference_files/missing_url.txt'),
-                        'Stderr reference for missing argument "URL" did not match.')
-        result_file.close()
-
-        result_file = open('test_result.txt', 'w+')
-        process = subprocess.Popen(['get-n-largest', 'https://dummy-path.com/test.txt'],
-                                   shell=True, stdout=subprocess.PIPE, stderr=result_file)
-        stdout, _ = process.communicate()
-        self.assertFalse(bool(stdout))
-        self.assertTrue(filecmp.cmp('test_result.txt', 'test_reference_files/missing_n.txt'),
-                        'Stderr reference for missing argument "N" did not match.')
-        result_file.close()
-
-        result_file = open('test_result.txt', 'w+')
-        process = subprocess.Popen(['n-largest-set-cache'],
-                                   shell=True, stdout=subprocess.PIPE, stderr=result_file)
-        stdout, _ = process.communicate()
-        self.assertFalse(bool(stdout))
-        self.assertTrue(filecmp.cmp('test_result.txt', 'test_reference_files/set_cache_missing_url.txt'),
-                        'Stderr reference for missing argument "ABSOLUTE_PATH" did not match.')
-        result_file.close()
-
-
-
+from click.testing import CliRunner
+from n_largest import get, clear_cache, set_cache_dir
 
 
 class TestGetNLargest(unittest.TestCase):
+
+    def test_invalid_parameters(self):
+        runner = CliRunner()
+        result = runner.invoke(get, ['alexander/dubinski', '50'])
+        self.assertEqual(result.exit_code, 2)
+        self.assertEqual(result.output,
+                         'Usage: get [OPTIONS] URL N\nTry \'get --help\' for help.\n\nError: Invalid value for \'URL\':'
+                         ' alexander/dubinski is not a valid url\n')
+
+
+class TestClearCache(unittest.TestCase):
     pass
 
 
-class TestSplitGenerator(unittest.TestCase):
-    pass
-
-
-class TestProcessLines(unittest.TestCase):
+class TestSetCacheDir(unittest.TestCase):
     pass
 
 
 class TestCustomParamType(unittest.TestCase):
     pass
+
+
+class AllTests(unittest.TestSuite):
+
+    def __init__(self):
+        super().__init__()
+        self.addTests([TestGetNLargest(), TestClearCache(), TestSetCacheDir(), TestCustomParamType()])
+
+
+if __name__ == '__main__':
+    test = AllTests()
+    result = unittest.TestResult()
+    test.run(result)
+    assert len(result.errors) == 0
+    assert len(result.failures) == 0
+    assert result.wasSuccessful()
