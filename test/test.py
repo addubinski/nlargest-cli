@@ -3,15 +3,30 @@ from click.testing import CliRunner
 from n_largest import get, clear_cache, set_cache_dir
 
 
-class TestGetNLargest(unittest.TestCase):
+class TestInvalidParameters(unittest.TestCase):
 
-    def test_invalid_parameters(self):
+    def test_url_missing_https(self):
         runner = CliRunner()
-        result = runner.invoke(get, ['alexander/dubinski', '50'])
+        result = runner.invoke(get, ['alexander-dubinski.com', '50'])
         self.assertEqual(result.exit_code, 2)
         self.assertEqual(result.output,
                          'Usage: get [OPTIONS] URL N\nTry \'get --help\' for help.\n\nError: Invalid value for \'URL\':'
-                         ' alexander/dubinski is not a valid url\n')
+                         ' alexander-dubinski.com is not a valid url\n')
+
+
+class TestInvalidOptions(unittest.TestCase):
+
+    def test_url_missing_https(self):
+        runner = CliRunner()
+        result = runner.invoke(get, ['alexander-dubinski.com', '50'])
+        self.assertEqual(result.exit_code, 2)
+        self.assertEqual(result.output,
+                         'Usage: get [OPTIONS] URL N\nTry \'get --help\' for help.\n\nError: Invalid value for \'URL\':'
+                         ' alexander-dubinski.com is not a valid url\n')
+
+
+class TestNLargestReporting(unittest.TestCase):
+    pass
 
 
 class TestClearCache(unittest.TestCase):
@@ -30,7 +45,14 @@ class AllTests(unittest.TestSuite):
 
     def __init__(self):
         super().__init__()
-        self.addTests([TestGetNLargest(), TestClearCache(), TestSetCacheDir(), TestCustomParamType()])
+        self.addTests([
+            TestInvalidParameters(),
+            TestInvalidOptions(),
+            TestNLargestReporting(),
+            TestClearCache(),
+            TestSetCacheDir(),
+            TestCustomParamType()
+        ])
 
 
 if __name__ == '__main__':

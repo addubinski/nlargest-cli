@@ -42,11 +42,12 @@ def get(no_cache, refresh_cache, chunk_size, url, n):
 
     URL is the http(s) path containing a fully qualified domain name to the target file.
 
-    N is the number of ids which will be printed to stdout (each id corresponding to the ith largest number in the file)
+    N is the number of ids which will be printed to stdout
+    (each id corresponding to the ith largest number in the file).
 
     Remote files are received in discrete chunks in order to preserve memory in the case of large files. Larger files
     should use the --chunk-size option to increase performance. Minimum chunk size is 1024 bytes with default value of
-    256kb (256000 bytes)
+    256kb (256000 bytes).
     """
     config_path = Path(CONFIG_FILE_NAME)
     if not config_path.exists():
@@ -73,7 +74,7 @@ def get(no_cache, refresh_cache, chunk_size, url, n):
 def set_cache_dir(absolute_path):
     """
     Sets the absolute_path in the local filesystem where cached files will be stored. All files in the current cache
-    will be migrated to the new cache directory
+    will be migrated to the new cache directory.
     """
     target_cache_path = Path(absolute_path)
     if target_cache_path.is_file():
@@ -94,13 +95,13 @@ def set_cache_dir(absolute_path):
     config_file = open(CONFIG_FILE_NAME, 'wb+')
     pickle.dump(config, config_file)
     config_file.close()
-    click.echo('Cache set to path {}'.format(absolute_path))
+    click.echo('Cache path set to {}'.format(absolute_path))
 
 
 @n_largest_cli.command()
 def clear_cache():
     """
-    Clears all the content of cache
+    Clears all the content of cache.
     """
     if not Path(CONFIG_FILE_NAME).exists():
         raise FileNotFoundError('Config file "config.pickle" not found. Please run n-largest-set-cache ABSOLUTE_PATH'
@@ -117,6 +118,7 @@ def clear_cache():
     for path in cache_dir.iterdir():
         if path.is_file():
             path.unlink(missing_ok=True)
+    click.echo('Cache cleared.')
 
 
 def process_file(file, n):
