@@ -3,14 +3,17 @@
 An intuitive CLI to receive id, number pairs from a remote text file and print the ids of the highest N numbers in
 the file.
 
-:warning:
+:warning: This application currently relies on http header ```Range``` in order to protect available memory when dealing
+ with very large files. When providing a url for a remote file, you must ensure the remote file's host supports
+ ```Range``` headers. Known hosts which support such headers are AWS S3
+ and GCP Cloud Storage.
 
 ## How It Works
 
 
-## Usage
+##Commands
 
-#### Main Command 
+#### Top Level Command 
 ```
 nlargest [OPTIONS] COMMAND [ARGS]
 ```
@@ -80,7 +83,7 @@ nlargest clear-cache [OPTIONS]
 <br />
 <br />
 
-## Production
+## Usage and Deployment
 
 <br />
 <br />
