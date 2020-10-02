@@ -187,19 +187,5 @@ class TestCustomParamType(unittest.TestCase):
     pass
 
 
-class AllTests(unittest.TestSuite):
-
-    def __init__(self):
-        super().__init__()
-        self.addTests([
-            TestInvalidArguments(),
-            TestInvalidOptions(),
-            TestNLargestReporting(),
-            TestClearCache(),
-            TestSetCacheDir(),
-            TestCustomParamType()
-        ])
-
-
 if __name__ == '__main__':
     test_program = unittest.main()
