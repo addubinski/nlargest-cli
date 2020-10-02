@@ -1,7 +1,12 @@
+import pickle
+import re
 import unittest
+import requests
 from click.testing import CliRunner
 from n_largest import get, clear_cache, set_cache_dir
+from constants import CACHE_PATH
 from param_types import LocalPath, RemoteUrl
+from util import NoContentError
 
 
 class CustomAssertions:
@@ -56,12 +61,14 @@ class TestInvalidArguments(unittest.TestCase, CustomAssertions):
         self.assertContains(result.output,
                             'Error: Invalid value for \'N\': -2 is smaller than the minimum valid value 1.')
 
-    def test_url_host_not_support_range(self):
+    def test_url_host_supports_range(self):
         runner = CliRunner()
-        result = runner.invoke(get, ['https://alexander-dubinski.com', '2'])
-        self.assertEqual(result.exit_code, 2)
-        self.assertContains(result.output,
-                            'Error: Invalid value for \'N\': 0 is smaller than the minimum valid value 1.')
+        with runner.isolated_filesystem():
+            with open('config.pickle', 'wb+') as f:
+                pickle.dump({CACHE_PATH: './'}, f)
+            result = runner.invoke(get, ['https://alexander-dubinski.com', '2'])
+        self.assertEqual(result.exit_code, 1)
+        self.assertIsInstance(result.exception, requests.exceptions.HTTPError)
 
 
 class TestInvalidOptions(unittest.TestCase, CustomAssertions):
@@ -78,24 +85,58 @@ class TestNLargestReporting(unittest.TestCase, CustomAssertions):
 
     def test_output_is_only_ids(self):
         runner = CliRunner()
-        result = runner.invoke(get, ['https://storage.googleapis.com/personal-webpage-static-jp/example.txt', '100'])
-        self.assertEqual(result.exit_code, 0)
-        self.assertContains(result.exception,
-                            'Error: Invalid value for \'N\': 0 is smaller than the minimum valid value 1.')
+        with runner.isolated_filesystem():
+            with open('config.pickle', 'wb+') as f:
+                pickle.dump({CACHE_PATH: './'}, f)
+            result = runner.invoke(get, ['https://triad-space-maps.s3-ap-northeast-1.amazonaws.com/test.txt',
+                                         '2'])
+            self.assertEqual(result.exit_code, 0)
+            self.assertRegex(result.output, r'^([a-z0-9]{32})(\r?\n)([a-z0-9]{32})(\r?\n)$')
 
     def test_correct_order(self):
         runner = CliRunner()
-        result = runner.invoke(get, ['https://storage.googleapis.com/personal-webpage-static-jp/example.txt', '100'])
+        with runner.isolated_filesystem():
+            with open('config.pickle', 'wb+') as f:
+                pickle.dump({CACHE_PATH: './'}, f)
+            result = runner.invoke(get, ['https://triad-space-maps.s3-ap-northeast-1.amazonaws.com/test.txt',
+                                         '6'])
         self.assertEqual(result.exit_code, 0)
-        self.assertContains(result.exception,
-                            'Error: Invalid value for \'N\': 0 is smaller than the minimum valid value 1.')
+        self.assertRegex(result.output, r'^(a00f29a8ed4b4ae79738121dd03d576c)(\r?\n)(8dab177516c04262abdef3f3e6200548)'
+                                        r'(\r?\n)(56b536ef84324182b0211679935fc370)(\r?\n)'
+                                        r'(50f5f7dbcc7542a5a1241d5151d9b9e3)(\r?\n)(4945f09d164b49459c35d3f9b5ec12b7)'
+                                        r'(\r?\n)(5fc9ae59efb644be90cb9c22a70f6dac)(\r?\n)$')
+
+    def test_correct_num_ids(self):
+        number_of_ids = 4
+        runner = CliRunner()
+        with runner.isolated_filesystem():
+            with open('config.pickle', 'wb+') as f:
+                pickle.dump({CACHE_PATH: './'}, f)
+            result = runner.invoke(get, ['https://triad-space-maps.s3-ap-northeast-1.amazonaws.com/test.txt',
+                                         str(number_of_ids)])
+            self.assertEqual(result.exit_code, 0)
+            self.assertTrue(len(re.split(r'\r?\n', result.output.strip())) == number_of_ids)
 
     def test_n_gt_items(self):
+        total_number_of_ids = 6
         runner = CliRunner()
-        result = runner.invoke(get, ['https://storage.googleapis.com/personal-webpage-static-jp/example.txt', '100'])
-        self.assertEqual(result.exit_code, 0)
-        self.assertContains(result.exception,
-                            'Error: Invalid value for \'N\': 0 is smaller than the minimum valid value 1.')
+        with runner.isolated_filesystem():
+            with open('config.pickle', 'wb+') as f:
+                pickle.dump({CACHE_PATH: './'}, f)
+            result = runner.invoke(get, ['https://triad-space-maps.s3-ap-northeast-1.amazonaws.com/test.txt',
+                                         '100'])
+            self.assertEqual(result.exit_code, 0)
+            self.assertTrue(len(re.split(r'\r?\n', result.output.strip())) == total_number_of_ids)
+
+    def test_empty_remote_file(self):
+        runner = CliRunner()
+        with runner.isolated_filesystem():
+            with open('config.pickle', 'wb+') as f:
+                pickle.dump({CACHE_PATH: './'}, f)
+            result = runner.invoke(get, ['https://triad-space-maps.s3-ap-northeast-1.amazonaws.com/empty_test.txt',
+                                         '5'])
+            self.assertEqual(result.exit_code, 1)
+            self.assertIsInstance(result.exception, NoContentError)
 
 
 class TestClearCache(unittest.TestCase):
@@ -135,7 +176,7 @@ class TestSetCacheDir(unittest.TestCase):
         runner = CliRunner()
         result = runner.invoke(set_cache_dir, [])
 
-    def success_message(self):
+    def test_success_message(self):
         runner = CliRunner()
         result = runner.invoke(set_cache_dir, [])
 
@@ -161,9 +202,4 @@ class AllTests(unittest.TestSuite):
 
 
 if __name__ == '__main__':
-    test = AllTests()
-    suite_result = unittest.TestResult()
-    test.run(suite_result)
-    assert len(suite_result.errors) == 0
-    assert len(suite_result.failures) == 0
-    assert suite_result.wasSuccessful()
+    test_program = unittest.main()

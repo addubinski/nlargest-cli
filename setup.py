@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name='GetTopNIds',
     version='1.0',
-    py_modules=['n_largest', 'param_types', 'constants'],
+    py_modules=['n_largest', 'param_types', 'util', 'constants'],
     install_requires=[
         'click',
         'requests'

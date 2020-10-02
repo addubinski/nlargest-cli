@@ -10,6 +10,10 @@ from pathlib import Path
 from os import fsync
 
 
+class NoContentError(Exception):
+    pass
+
+
 def get_n_largest(file, n):
     return heapq.nlargest(n,  id_number_tuple_generator(file), key=itemgetter(1))
 
@@ -37,10 +41,13 @@ def get_remote_file(url, chunk_size, cache_root, should_refresh):
     file_name = Path('{}.gz'.format(hashlib.sha256(url.encode()).hexdigest()))
     cache_file = (cache_root / file_name)
     if cache_file.exists() and not should_refresh:
+        click.echo('\nUsing cached file...\n')
         return file_name
     new_file = gzip.open(cache_file, 'wb+')
     req = requests.get(url, headers=make_range_header(current_chunk, chunk_size))
     content = req.text
+    if not req.text.strip():
+        raise NoContentError('The remote file is empty, not found or contains no content after byte 499.')
     while req.status_code != requests.codes.range_not_satisfiable:
         if req.status_code == SUCCESS_STATUS:
             new_file.write(content.encode())
