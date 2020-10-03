@@ -50,6 +50,7 @@ def get(no_cache, refresh_cache, chunk_size, url, n):
     config_file = config_path.open('rb')
     config = pickle.load(config_file)
     if not config[CACHE_PATH]:
+        config_file.close()
         raise KeyError('cache_path not found in config file.')
     config_file.close()
     cache_root = Path(config[CACHE_PATH])
@@ -102,6 +103,7 @@ def clear_cache():
     config_file = open(CONFIG_FILE_NAME, 'rb')
     config = pickle.load(config_file)
     if not config[CACHE_PATH]:
+        config_file.close()
         raise KeyError('cache_path not found in config file. Please run n-largest-set-cache ABSOLUTE_PATH to'
                        ' re-initialize application cache configuration.')
     cache_dir = Path(config[CACHE_PATH])

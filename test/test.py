@@ -2,11 +2,19 @@ import pickle
 import re
 import unittest
 import requests
+import shutil
 from click.testing import CliRunner
 from n_largest import get, clear_cache, set_cache_dir
-from constants import CACHE_PATH
+from constants import CACHE_PATH, CONFIG_FILE_NAME
 from param_types import LocalPath, RemoteUrl
 from util import NoContentError
+from pathlib import Path
+
+TEST_FILE_HASH = '04f62a08ad528d36cf6ff8c7e1dcf4b77f443fbf8f638a234e3aa1f4f1185284'
+DEFAULT_VAR_DIR = Path('/usr/var')
+CACHE_DIR = Path('cache')
+CACHE_FULL_PATH = DEFAULT_VAR_DIR / CACHE_DIR
+CONFIG_FILE_PATH = Path(CONFIG_FILE_NAME)
 
 
 class CustomAssertions:
@@ -17,6 +25,13 @@ class CustomAssertions:
             raise result
         if not (target in result):
             raise AssertionError('"{}" was not found in the result "{}"'.format(target, result))
+
+    @staticmethod
+    def assertDoesNotContain(result, target):
+        if isinstance(result, Exception):
+            raise result
+        if target in result:
+            raise AssertionError('"{}" was found in the result "{}"'.format(target, result))
 
 
 class TestInvalidArguments(unittest.TestCase, CustomAssertions):
@@ -64,7 +79,7 @@ class TestInvalidArguments(unittest.TestCase, CustomAssertions):
     def test_url_host_supports_range(self):
         runner = CliRunner()
         with runner.isolated_filesystem():
-            with open('config.pickle', 'wb+') as f:
+            with open(CONFIG_FILE_NAME, 'wb+') as f:
                 pickle.dump({CACHE_PATH: './'}, f)
             result = runner.invoke(get, ['https://alexander-dubinski.com', '2'])
         self.assertEqual(result.exit_code, 1)
@@ -81,13 +96,14 @@ class TestInvalidOptions(unittest.TestCase, CustomAssertions):
                                            ' the minimum valid value 1024.\n')
 
 
-class TestNLargestReporting(unittest.TestCase, CustomAssertions):
+class TestNLargestReporting(unittest.TestCase):
 
     def test_output_is_only_ids(self):
         runner = CliRunner()
         with runner.isolated_filesystem():
-            with open('config.pickle', 'wb+') as f:
-                pickle.dump({CACHE_PATH: './'}, f)
+            CACHE_FULL_PATH.mkdir(parents=True)
+            with open(CONFIG_FILE_NAME, 'wb+') as f:
+                pickle.dump({CACHE_PATH: '/usr/var/cache'}, f)
             result = runner.invoke(get, ['https://triad-space-maps.s3-ap-northeast-1.amazonaws.com/test.txt',
                                          '2'])
             self.assertEqual(result.exit_code, 0)
@@ -96,22 +112,25 @@ class TestNLargestReporting(unittest.TestCase, CustomAssertions):
     def test_correct_order(self):
         runner = CliRunner()
         with runner.isolated_filesystem():
-            with open('config.pickle', 'wb+') as f:
-                pickle.dump({CACHE_PATH: './'}, f)
+            CACHE_FULL_PATH.mkdir(parents=True)
+            with open(CONFIG_FILE_NAME, 'wb+') as f:
+                pickle.dump({CACHE_PATH: '/usr/var/cache'}, f)
             result = runner.invoke(get, ['https://triad-space-maps.s3-ap-northeast-1.amazonaws.com/test.txt',
                                          '6'])
-        self.assertEqual(result.exit_code, 0)
-        self.assertRegex(result.output, r'^(a00f29a8ed4b4ae79738121dd03d576c)(\r?\n)(8dab177516c04262abdef3f3e6200548)'
-                                        r'(\r?\n)(56b536ef84324182b0211679935fc370)(\r?\n)'
-                                        r'(50f5f7dbcc7542a5a1241d5151d9b9e3)(\r?\n)(4945f09d164b49459c35d3f9b5ec12b7)'
-                                        r'(\r?\n)(5fc9ae59efb644be90cb9c22a70f6dac)(\r?\n)$')
+            self.assertEqual(result.exit_code, 0)
+            self.assertRegex(result.output,
+                             r'^(a00f29a8ed4b4ae79738121dd03d576c)(\r?\n)(8dab177516c04262abdef3f3e6200548)'
+                             r'(\r?\n)(56b536ef84324182b0211679935fc370)(\r?\n)'
+                             r'(50f5f7dbcc7542a5a1241d5151d9b9e3)(\r?\n)(4945f09d164b49459c35d3f9b5ec12b7)'
+                             r'(\r?\n)(5fc9ae59efb644be90cb9c22a70f6dac)(\r?\n)$')
 
     def test_correct_num_ids(self):
         number_of_ids = 4
         runner = CliRunner()
         with runner.isolated_filesystem():
-            with open('config.pickle', 'wb+') as f:
-                pickle.dump({CACHE_PATH: './'}, f)
+            CACHE_FULL_PATH.mkdir(parents=True)
+            with open(CONFIG_FILE_NAME, 'wb+') as f:
+                pickle.dump({CACHE_PATH: '/usr/var/cache'}, f)
             result = runner.invoke(get, ['https://triad-space-maps.s3-ap-northeast-1.amazonaws.com/test.txt',
                                          str(number_of_ids)])
             self.assertEqual(result.exit_code, 0)
@@ -121,8 +140,9 @@ class TestNLargestReporting(unittest.TestCase, CustomAssertions):
         total_number_of_ids = 6
         runner = CliRunner()
         with runner.isolated_filesystem():
-            with open('config.pickle', 'wb+') as f:
-                pickle.dump({CACHE_PATH: './'}, f)
+            CACHE_FULL_PATH.mkdir(parents=True)
+            with open(CONFIG_FILE_NAME, 'wb+') as f:
+                pickle.dump({CACHE_PATH: '/usr/var/cache'}, f)
             result = runner.invoke(get, ['https://triad-space-maps.s3-ap-northeast-1.amazonaws.com/test.txt',
                                          '100'])
             self.assertEqual(result.exit_code, 0)
@@ -131,54 +151,208 @@ class TestNLargestReporting(unittest.TestCase, CustomAssertions):
     def test_empty_remote_file(self):
         runner = CliRunner()
         with runner.isolated_filesystem():
-            with open('config.pickle', 'wb+') as f:
-                pickle.dump({CACHE_PATH: './'}, f)
+            CACHE_FULL_PATH.mkdir(parents=True)
+            with open(CONFIG_FILE_NAME, 'wb+') as f:
+                pickle.dump({CACHE_PATH: '/usr/var/cache'}, f)
             result = runner.invoke(get, ['https://triad-space-maps.s3-ap-northeast-1.amazonaws.com/empty_test.txt',
                                          '5'])
             self.assertEqual(result.exit_code, 1)
             self.assertIsInstance(result.exception, NoContentError)
 
+    def tearDown(self):
+        runner = CliRunner()
+        with runner.isolated_filesystem():
+            if DEFAULT_VAR_DIR.exists():
+                shutil.rmtree(DEFAULT_VAR_DIR)
+            if CONFIG_FILE_PATH.exists():
+                CONFIG_FILE_PATH.unlink()
 
-class TestClearCache(unittest.TestCase):
+
+class TestCacheBehavior(unittest.TestCase, CustomAssertions):
+
+    def test_file_cached_in_cache_dir(self):
+        runner = CliRunner()
+        with runner.isolated_filesystem():
+            CACHE_FULL_PATH.mkdir(parents=True)
+            with open(CONFIG_FILE_NAME, 'wb+') as f:
+                pickle.dump({CACHE_PATH: CACHE_FULL_PATH}, f)
+            result = runner.invoke(get, ['https://triad-space-maps.s3-ap-northeast-1.amazonaws.com/test.txt', '3'])
+            self.assertEqual(result.exit_code, 0)
+            self.assertTrue((CACHE_FULL_PATH / Path('{}.gz'.format(TEST_FILE_HASH)))
+                            .exists())
+
+    def test_no_cache_flag_prevents_cache(self):
+        runner = CliRunner()
+        with runner.isolated_filesystem():
+            CACHE_FULL_PATH.mkdir(parents=True)
+            with open(CONFIG_FILE_NAME, 'wb+') as f:
+                pickle.dump({CACHE_PATH: CACHE_FULL_PATH}, f)
+            result = runner.invoke(get, ['--no-cache',
+                                         'https://triad-space-maps.s3-ap-northeast-1.amazonaws.com/test.txt', '3'])
+            self.assertEqual(result.exit_code, 0)
+            self.assertTrue(not any((True for _ in CACHE_FULL_PATH.iterdir())))
+
+    def test_notifies_when_using_cached_file(self):
+        runner = CliRunner()
+        with runner.isolated_filesystem():
+            CACHE_FULL_PATH.mkdir(parents=True)
+            with open(CONFIG_FILE_NAME, 'wb+') as f:
+                pickle.dump({CACHE_PATH: CACHE_FULL_PATH}, f)
+            result = runner.invoke(get, ['https://triad-space-maps.s3-ap-northeast-1.amazonaws.com/test.txt', '3'])
+            self.assertEqual(result.exit_code, 0)
+            self.assertTrue((CACHE_FULL_PATH / Path('{}.gz'.format(TEST_FILE_HASH))).exists())
+            result = runner.invoke(get, ['https://triad-space-maps.s3-ap-northeast-1.amazonaws.com/test.txt', '3'])
+            self.assertEqual(result.exit_code, 0)
+            self.assertContains(result.output, '\nUsing cached file...\n')
+
+    def test_no_cache_flag_deletes_old_file(self):
+        runner = CliRunner()
+        with runner.isolated_filesystem():
+            CACHE_FULL_PATH.mkdir(parents=True)
+            with open(CONFIG_FILE_NAME, 'wb+') as f:
+                pickle.dump({CACHE_PATH: CACHE_FULL_PATH}, f)
+            result = runner.invoke(get, ['https://triad-space-maps.s3-ap-northeast-1.amazonaws.com/test.txt', '3'])
+            self.assertEqual(result.exit_code, 0)
+            self.assertTrue((CACHE_FULL_PATH / Path('{}.gz'.format(TEST_FILE_HASH))).exists())
+            result = runner.invoke(get, ['--no-cache',
+                                         'https://triad-space-maps.s3-ap-northeast-1.amazonaws.com/test.txt', '3'])
+            self.assertEqual(result.exit_code, 0)
+            self.assertTrue(not any((True for _ in CACHE_FULL_PATH.iterdir())))
+
+    def test_refresh_cache_ignores_cache(self):
+        runner = CliRunner()
+        with runner.isolated_filesystem():
+            CACHE_FULL_PATH.mkdir(parents=True)
+            with open(CONFIG_FILE_NAME, 'wb+') as f:
+                pickle.dump({CACHE_PATH: CACHE_FULL_PATH}, f)
+            result = runner.invoke(get, ['https://triad-space-maps.s3-ap-northeast-1.amazonaws.com/test.txt', '3'])
+            self.assertEqual(result.exit_code, 0)
+            self.assertTrue((CACHE_FULL_PATH / Path('{}.gz'.format(TEST_FILE_HASH))).exists())
+            result = runner.invoke(get, ['https://triad-space-maps.s3-ap-northeast-1.amazonaws.com/test.txt', '3'])
+            self.assertEqual(result.exit_code, 0)
+            self.assertContains(result.output, '\nUsing cached file...\n')
+            result = runner.invoke(get, ['--refresh-cache',
+                                         'https://triad-space-maps.s3-ap-northeast-1.amazonaws.com/test.txt', '3'])
+            self.assertEqual(result.exit_code, 0)
+            self.assertDoesNotContain(result.output, '\nUsing cached file...\n')
+
+    def tearDown(self):
+        runner = CliRunner()
+        with runner.isolated_filesystem():
+            if DEFAULT_VAR_DIR.exists():
+                shutil.rmtree(DEFAULT_VAR_DIR)
+            if CONFIG_FILE_PATH.exists():
+                CONFIG_FILE_PATH.unlink()
+
+
+class TestClearCache(unittest.TestCase, CustomAssertions):
 
     def test_config_file_missing(self):
         runner = CliRunner()
         result = runner.invoke(clear_cache, [])
+        self.assertEqual(result.exit_code, 1)
+        self.assertIsInstance(result.exception, FileNotFoundError)
 
     def test_config_file_key_missing(self):
         runner = CliRunner()
-        result = runner.invoke(clear_cache, [])
+        with runner.isolated_filesystem():
+            with open(CONFIG_FILE_NAME, 'wb+') as f:
+                pickle.dump({'wrong_key': CACHE_FULL_PATH}, f)
+            result = runner.invoke(clear_cache, [])
+            self.assertEqual(result.exit_code, 1)
+            self.assertIsInstance(result.exception, KeyError)
 
     def test_directory_does_not_exist(self):
         runner = CliRunner()
-        result = runner.invoke(clear_cache, [])
+        with runner.isolated_filesystem():
+            with open(CONFIG_FILE_NAME, 'wb+') as f:
+                pickle.dump({CACHE_PATH: CACHE_FULL_PATH}, f)
+            result = runner.invoke(clear_cache, [])
+            self.assertEqual(result.exit_code, 1)
+            self.assertIsInstance(result.exception, NotADirectoryError)
 
     def test_cache_is_cleared(self):
         runner = CliRunner()
-        result = runner.invoke(clear_cache, [])
+        with runner.isolated_filesystem():
+            CACHE_FULL_PATH.mkdir(parents=True)
+            with open(CONFIG_FILE_NAME, 'wb+') as f:
+                pickle.dump({CACHE_PATH: CACHE_FULL_PATH}, f)
+            result = runner.invoke(get, ['https://triad-space-maps.s3-ap-northeast-1.amazonaws.com/test.txt', '3'])
+            self.assertEqual(result.exit_code, 0)
+            self.assertTrue((CACHE_FULL_PATH / Path('{}.gz'.format(TEST_FILE_HASH))).exists())
+            result = runner.invoke(clear_cache, [])
+            self.assertContains(result.output, 'Cache cleared.')
+            self.assertTrue(not any((True for _ in Path(CACHE_FULL_PATH).iterdir())))
+
+    def tearDown(self):
+        runner = CliRunner()
+        with runner.isolated_filesystem():
+            if DEFAULT_VAR_DIR.exists():
+                shutil.rmtree(DEFAULT_VAR_DIR)
+            if CONFIG_FILE_PATH.exists():
+                CONFIG_FILE_PATH.unlink()
 
 
 class TestSetCacheDir(unittest.TestCase):
 
     def test_set_cache_dir_is_file(self):
         runner = CliRunner()
-        result = runner.invoke(set_cache_dir, [])
+        with runner.isolated_filesystem():
+            DEFAULT_VAR_DIR.mkdir(parents=True)
+            (DEFAULT_VAR_DIR / Path('cache.txt')).touch()
+            with open(CONFIG_FILE_NAME, 'wb+') as f:
+                pickle.dump({CACHE_PATH: CACHE_FULL_PATH}, f)
+            result = runner.invoke(set_cache_dir, [str(DEFAULT_VAR_DIR / Path('cache.txt')).replace('\\', '/')])
+            self.assertEqual(result.exit_code, 1)
+            self.assertIsInstance(result.exception, NotADirectoryError)
 
     def test_default_config_file_created(self):
         runner = CliRunner()
-        result = runner.invoke(set_cache_dir, [])
+        with runner.isolated_filesystem():
+            self.assertTrue(not CONFIG_FILE_PATH.exists())
+            result = runner.invoke(set_cache_dir, [str(DEFAULT_VAR_DIR).replace('\\', '/')])
+            self.assertEqual(result.exit_code, 0)
+            self.assertTrue(CONFIG_FILE_PATH.exists())
 
     def test_nonexistent_dir_created(self):
         runner = CliRunner()
-        result = runner.invoke(set_cache_dir, [])
+        with runner.isolated_filesystem():
+            self.assertTrue(not (DEFAULT_VAR_DIR / Path('nlargest')).exists())
+            self.assertTrue(not (DEFAULT_VAR_DIR / Path('nlargest/cache')).exists())
+            result = runner.invoke(set_cache_dir, [str(DEFAULT_VAR_DIR / Path('nlargest/cache')).replace('\\', '/')])
+            self.assertEqual(result.exit_code, 0)
+            self.assertTrue((DEFAULT_VAR_DIR / Path('nlargest')).exists())
+            self.assertTrue((DEFAULT_VAR_DIR / Path('nlargest/cache')).exists())
 
     def test_all_existing_files_moved_to_new_cache(self):
+        runner = CliRunner()
+        with runner.isolated_filesystem():
+            Path(CACHE_FULL_PATH).mkdir(parents=True)
+            with open(CONFIG_FILE_NAME, 'wb+') as f:
+                pickle.dump({CACHE_PATH: CACHE_FULL_PATH}, f)
+            result = runner.invoke(get, ['https://triad-space-maps.s3-ap-northeast-1.amazonaws.com/test.txt', '3'])
+            self.assertEqual(result.exit_code, 0)
+            self.assertTrue((CACHE_FULL_PATH / Path('{}.gz'.format(TEST_FILE_HASH))).exists())
+            self.assertTrue(
+                not (DEFAULT_VAR_DIR / Path('nlargest/cache/{}.gz'.format(TEST_FILE_HASH))).exists())
+            result = runner.invoke(set_cache_dir, [str(DEFAULT_VAR_DIR / Path('nlargest/cache')).replace('\\', '/')])
+            self.assertTrue((DEFAULT_VAR_DIR / Path('nlargest/cache/{}.gz'.format(TEST_FILE_HASH))).exists())
+
+    def test_new_files_go_to_new_cache(self):
         runner = CliRunner()
         result = runner.invoke(set_cache_dir, [])
 
     def test_success_message(self):
         runner = CliRunner()
         result = runner.invoke(set_cache_dir, [])
+
+    def tearDown(self):
+        runner = CliRunner()
+        with runner.isolated_filesystem():
+            if DEFAULT_VAR_DIR.exists():
+                shutil.rmtree(DEFAULT_VAR_DIR)
+            if CONFIG_FILE_PATH.exists():
+                CONFIG_FILE_PATH.unlink()
 
 
 class TestCustomParamType(unittest.TestCase):

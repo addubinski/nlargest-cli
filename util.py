@@ -47,14 +47,17 @@ def get_remote_file(url, chunk_size, cache_root, should_refresh):
     req = requests.get(url, headers=make_range_header(current_chunk, chunk_size))
     content = req.text
     if not req.text.strip():
+        new_file.close()
         raise NoContentError('The remote file is empty, not found or contains no content after byte 499.')
     while req.status_code != requests.codes.range_not_satisfiable:
         if req.status_code == SUCCESS_STATUS:
             new_file.write(content.encode())
         else:
             if req.status_code == requests.codes.ok:
+                new_file.close()
                 raise requests.exceptions.HTTPError('Target file host does not support "Range" http headers. Please use'
                                                     ' an AWS S3 bucket or a host which supports the required headers.')
+            new_file.close()
             req.raise_for_status()
         current_chunk += chunk_size + 1
         req = requests.get(url, headers=make_range_header(current_chunk, chunk_size))
