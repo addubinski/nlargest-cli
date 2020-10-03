@@ -17,7 +17,9 @@ to prevent potentially very large files from needing to be repeatedly sent over 
  (or similar) computation on them. The cache is also configurable (see the [clear-cache](#clear-cache) and 
  [set-cache-dir](#set-cache-directory) commands). The sorting mechanism for the data received from the remote file uses
  a priority queue algorithm (also known as heap queue) to report the ids of the top N numbers. This has the benefit of
- being $`\sqrt(2)`$
+ being <img src="https://render.githubusercontent.com/render/math?math=O(n\log(n))"> in the worst case and
+  <img src="https://render.githubusercontent.com/render/math?math=O(n)"> for certain choices of N. See the
+  [complexity](#complexity) for more on this.
 
 ##Commands
 
