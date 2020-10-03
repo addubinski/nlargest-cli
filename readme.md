@@ -9,7 +9,15 @@ the file.
  and GCP Cloud Storage.
 
 ## How It Works
-
+The N Largest CLI was built to minimize data transfer over the internet and memory usage while sorting an arbitrarily
+large dataset from a remote repository. Using http ```Range``` header only a small portion of the file is ever stored in
+memory. This behavior is also configurable via the CLI options, as large files will benefit from processing larger
+ chunks at a time, granted there is enough available memory. Each remote file is compressed and cached on disk to
+to prevent potentially very large files from needing to be repeatedly sent over the network just to do the same
+ (or similar) computation on them. The cache is also configurable (see the [clear-cache](#clear-cache) and 
+ [set-cache-dir](#set-cache-directory) commands). The sorting mechanism for the data received from the remote file uses
+ a priority queue algorithm (also known as heap queue) to report the ids of the top N numbers. This has the benefit of
+ being $`\sqrt(2)`$
 
 ##Commands
 
