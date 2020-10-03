@@ -1,10 +1,12 @@
+import pickle
 import click
 import re
 import requests
 import hashlib
 import heapq
 import gzip
-from constants import SUCCESS_STATUS, FILE_START, RANGE_HEADER_TEMPLATE, RANGE_HEADER
+from constants import SUCCESS_STATUS, FILE_START, RANGE_HEADER_TEMPLATE, RANGE_HEADER, CONFIG_FILE_PATH, \
+    DEFAULT_CACHE_PATH, CACHE_PATH
 from operator import itemgetter
 from pathlib import Path
 from os import fsync
@@ -70,3 +72,10 @@ def get_remote_file(url, chunk_size, cache_root, should_refresh):
 
 def make_range_header(current_chunk, chunk_size):
     return {RANGE_HEADER: RANGE_HEADER_TEMPLATE.format(current_chunk, current_chunk + chunk_size)}
+
+
+def remake_config_file_if_missing():
+    if not CONFIG_FILE_PATH.exists():
+        default_cache_file = CONFIG_FILE_PATH.open('wb+')
+        pickle.dump({CACHE_PATH: DEFAULT_CACHE_PATH}, default_cache_file)
+        default_cache_file.close()

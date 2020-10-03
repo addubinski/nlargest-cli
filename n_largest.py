@@ -1,11 +1,11 @@
 import click
 import pickle
 import gzip
-from constants import DEFAULT_CACHE_PATH, CACHE_PATH, CONFIG_FILE_NAME
+from constants import CACHE_PATH, CONFIG_FILE_PATH
 from param_types import LocalPath, RemoteUrl
 from pathlib import Path
 from os import remove
-from util import get_remote_file, get_n_largest, print_n_largest
+from util import get_remote_file, get_n_largest, print_n_largest, remake_config_file_if_missing
 
 
 @click.group()
@@ -42,17 +42,12 @@ def get(no_cache, refresh_cache, chunk_size, url, n):
     should use the --chunk-size option to increase performance. Minimum chunk size is 1024 bytes with default value of
     256kb (256000 bytes).
     """
-    config_path = Path(CONFIG_FILE_NAME)
-    if not config_path.exists():
-        default_cache_file = config_path.open('wb+')
-        pickle.dump({CACHE_PATH: DEFAULT_CACHE_PATH}, default_cache_file)
-        default_cache_file.close()
-    config_file = config_path.open('rb')
+    remake_config_file_if_missing()
+    config_file = CONFIG_FILE_PATH.open('rb')
     config = pickle.load(config_file)
-    if not config[CACHE_PATH]:
-        config_file.close()
-        raise KeyError('cache_path not found in config file.')
     config_file.close()
+    if not config[CACHE_PATH]:
+        raise KeyError('cache_path not found in config file.')
     cache_root = Path(config[CACHE_PATH])
     file_name = get_remote_file(url, chunk_size, cache_root, refresh_cache)
     file = gzip.open((cache_root / file_name), 'rb')
@@ -73,11 +68,8 @@ def set_cache_dir(absolute_path):
     target_cache_path = Path(absolute_path)
     if target_cache_path.is_file():
         raise NotADirectoryError('Provided path {} is a file, cache path must be a directory.')
-    if not Path(CONFIG_FILE_NAME).exists():
-        default_cache_file = open(CONFIG_FILE_NAME, 'wb+')
-        pickle.dump({CACHE_PATH: DEFAULT_CACHE_PATH}, default_cache_file)
-        default_cache_file.close()
-    config_file = open(CONFIG_FILE_NAME, 'rb')
+    remake_config_file_if_missing()
+    config_file = CONFIG_FILE_PATH.open('rb')
     config = pickle.load(config_file)
     config_file.close()
     if not target_cache_path.exists():
@@ -86,7 +78,7 @@ def set_cache_dir(absolute_path):
     for file in old_cache_path.glob('*.gz'):
         file.rename(target_cache_path / file.name)
     config[CACHE_PATH] = absolute_path
-    config_file = open(CONFIG_FILE_NAME, 'wb+')
+    config_file = CONFIG_FILE_PATH.open('wb+')
     pickle.dump(config, config_file)
     config_file.close()
     click.echo('Cache path set to {}'.format(absolute_path))
@@ -97,13 +89,13 @@ def clear_cache():
     """
     Clears all the content of cache.
     """
-    if not Path(CONFIG_FILE_NAME).exists():
+    if not CONFIG_FILE_PATH.exists():
         raise FileNotFoundError('Config file "config.pickle" not found. Please run n-largest-set-cache ABSOLUTE_PATH'
                                 ' to re-initialize application cache configuration.')
-    config_file = open(CONFIG_FILE_NAME, 'rb')
+    config_file = CONFIG_FILE_PATH.open('rb')
     config = pickle.load(config_file)
+    config_file.close()
     if not config[CACHE_PATH]:
-        config_file.close()
         raise KeyError('cache_path not found in config file. Please run n-largest-set-cache ABSOLUTE_PATH to'
                        ' re-initialize application cache configuration.')
     cache_dir = Path(config[CACHE_PATH])

@@ -17,9 +17,9 @@ to prevent potentially very large files from needing to be repeatedly sent over 
  (or similar) computation on them. The cache is also configurable (see the [clear-cache](#clear-cache) and 
  [set-cache-dir](#set-cache-directory) commands). The sorting mechanism for the data received from the remote file uses
  a priority queue algorithm (also known as heap queue) to report the ids of the top N numbers. This has the benefit of
- being running in order of <img src="https://render.githubusercontent.com/render/math?math=O(n\log(n))"> in the worst case
-  and <img src="https://render.githubusercontent.com/render/math?math=O(n)"> for certain choices of N. See the
-  [complexity](#complexity) for more on this.
+ being running in order of ![big O n log n](https://render.githubusercontent.com/render/math?math=O(n{log(n)}))
+  in the worst case and ![big O n](https://render.githubusercontent.com/render/math?math=O(n)) for certain choices of N.
+   See the [complexity](#complexity) for more on this.
 
 
 ##Commands
@@ -95,6 +95,23 @@ nlargest clear-cache [OPTIONS]
 <br />
 
 ## Usage and Deployment
+The CLI can be used on a local machine without Docker or in a docker container. For usage on a local machine, see the
+[local development](#local-development) section.
+
+#### Deployment with Docker
+First build and image with the provided Dockerfile and make sure it is built in the root directory.
+```
+docker build . -t <image tag name>
+```
+After building you can run it and the attached console will put you in the root directory of the CLI code.
+```
+docker run -it <image tag name or id>
+```
+Commands can be ran from anywhere in the container using bash or can be ran externally from the container with
+ ```docker exec```
+```
+docker exec -it <container name or id> nlargest get https://alexander-dubinski.com 5
+```
 
 <br />
 <br />

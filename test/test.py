@@ -7,7 +7,7 @@ import requests
 import shutil
 from click.testing import CliRunner
 from n_largest import get, clear_cache, set_cache_dir
-from constants import CACHE_PATH, CONFIG_FILE_NAME
+from constants import CACHE_PATH, CONFIG_FILE_PATH
 from param_types import LocalPath, RemoteUrl
 from util import NoContentError
 from pathlib import Path
@@ -16,7 +16,6 @@ TEST_FILE_HASH = '04f62a08ad528d36cf6ff8c7e1dcf4b77f443fbf8f638a234e3aa1f4f11852
 DEFAULT_VAR_DIR = Path('/usr/var')
 CACHE_DIR = Path('cache')
 CACHE_FULL_PATH = DEFAULT_VAR_DIR / CACHE_DIR
-CONFIG_FILE_PATH = Path(CONFIG_FILE_NAME)
 NEW_CACHE = DEFAULT_VAR_DIR / Path('nlargest/cache')
 
 
@@ -24,6 +23,8 @@ class CustomAssertions:
 
     @staticmethod
     def inject_default_config_file():
+        if not CONFIG_FILE_PATH.exists():
+            CONFIG_FILE_PATH.parent.mkdir(exist_ok=True, parents=True)
         file = CONFIG_FILE_PATH.open('wb+')
         pickle.dump({CACHE_PATH: CACHE_FULL_PATH}, file)
         file.close()
@@ -256,6 +257,7 @@ class TestClearCache(unittest.TestCase, CustomAssertions):
 
     def test_config_file_missing(self):
         runner = CliRunner()
+        self.inject_default_config_file()
         if CONFIG_FILE_PATH.exists():
             CONFIG_FILE_PATH.unlink()
         self.assertTrue(not CONFIG_FILE_PATH.exists())
@@ -266,6 +268,7 @@ class TestClearCache(unittest.TestCase, CustomAssertions):
     def test_config_file_key_missing(self):
         runner = CliRunner()
         with runner.isolated_filesystem():
+            self.inject_default_config_file()
             with CONFIG_FILE_PATH.open('wb+') as file:
                 pickle.dump({'wrong_key': CACHE_FULL_PATH}, file)
             result = runner.invoke(clear_cache, [])
