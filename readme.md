@@ -21,8 +21,7 @@ to prevent potentially very large files from needing to be repeatedly sent over 
   in the worst case and ![big O n](https://render.githubusercontent.com/render/math?math=O(n)) for certain choices of N.
    See the [complexity](#complexity) for more on this.
 
-
-##Commands
+## Commands
 
 #### Top Level Command 
 ```
