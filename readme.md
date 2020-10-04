@@ -17,7 +17,8 @@ to prevent potentially very large files from needing to be repeatedly sent over 
  (or similar) computation on them. The cache is also configurable (see the [clear-cache](#clear-cache) and 
  [set-cache-dir](#set-cache-directory) commands). The sorting mechanism for the data received from the remote file uses
  a priority queue algorithm (also known as heap queue) to report the ids of the top N numbers. This has the benefit of
- being running in order of ![big O n log n](https://render.githubusercontent.com/render/math?math=O(n{log(n)}))
+ being running in order of 
+ <img alt="big O n log n" src="https://render.githubusercontent.com/render/math?math=O(n\log(n))">
   in the worst case and ![big O n](https://render.githubusercontent.com/render/math?math=O(n)) for certain choices of N.
    See the [complexity](#complexity) for more on this.
 
@@ -95,7 +96,7 @@ nlargest clear-cache [OPTIONS]
 
 ## Usage and Deployment
 The CLI can be used on a local machine without Docker or in a docker container. For usage on a local machine, see the
-[local development](#local-development) section.
+[local development](#usage-and-deployment) section.
 
 #### Deployment with Docker
 First build and image with the provided Dockerfile and make sure it is built in the root directory.
@@ -109,21 +110,72 @@ docker run -it <image tag name or id>
 Commands can be ran from anywhere in the container using bash or can be ran externally from the container with
  ```docker exec```
 ```
-docker exec -it <container name or id> nlargest get https://alexander-dubinski.com 5
+docker exec -it <container name or id> nlargest get <remote file url> 5
 ```
 
 <br />
 <br />
 
-## Local Development
+## Usage on Local Machine or for Development
+The N largest CLI can also be ran on your local machine without the use of docker. All you need is to have python 3
+ installed or create a virtualenv. It is recommended you use a virtualenv however because you will be installing a
+ local package from ```setup.py``` and if a virtualenv is not used it will be installed globally.
+ To get started, first install all dependencies
+```
+pip install -r requirements.txt
+```
+Next you will need install the local package defined in ```setup.py```. The following command should be ran from the
+root directory of the project.
+```
+pip install .
+```
+If installing for local development, you will need to run a different version of the above command in order to make the
+local package update when the code is changed without re-installing each time.
+```
+pip install --editable .
+```
+From this point on, the commands can be ran anywhere on the local machine. The only caveat is that the python
+interpreter which was used to install the local package must be available to run the commands. So for example, if you
+used a virtualenv to install, that virtualenv must be activated in order for the commands to be in your ```PATH```
 
 <br />
 <br />
 
 ## Complexity
 
+#### Space
+Space complexity was front and center when designing this CLI in order to accommodate machines with limited memory but
+which need to process arbitrarily large files. There are two points in the execution of an ```nlargest get``` command in
+which space complexity is concerned. First is when the remote file is requested from the repository and cached on disk.
+In this case the space complexity is equal to the fraction of the file specified with the ```--chunk-size``` option.
+In the worst case the user will specify a chunk size greater than or equal to the size of the file, in which case it
+take up ![big O n](https://render.githubusercontent.com/render/math?math=O(n)) in memory. If chunk size is less than the
+size of the whole file, space complexity is equal to 
+<img alt="big O n over cs" src="https://render.githubusercontent.com/render/math?math=O(\frac{n}{chunksize})" >.
+The second point is when the n largest ids are computed. Generators are used to iterate through all id, number tuples
+which puts it at 
+![big O constant](https://render.githubusercontent.com/render/math?math=O(1)). However, the priority queue algorithm
+ will store ```m``` tuples where ```m``` refers to the top ```N``` ids requested in the command. This means space
+ complexity at this step will be ![big O n](https://render.githubusercontent.com/render/math?math=O(n)) for choices of
+ ```N``` which are close to the number of lines in the remote text file and will be 
+ ![big O constant](https://render.githubusercontent.com/render/math?math=O(1)) for choices of ```N``` which are close to
+ ```N = 1```. Therefore in the worst case, space complexity is 
+ ![big O n](https://render.githubusercontent.com/render/math?math=O(n)).
+
+#### Time
+The sorting algorithm for the CLI uses a priority queue algorithm in which a min heap is populated with the first
+ ```N``` elements in the collection of id, number pairs. The root of the heap is checked against the remaining numbers
+ and replaced if the new number is greater than the root. This means the complexity if of order
+<img alt="big O log n m" src="https://render.githubusercontent.com/render/math?math=O(m\log(n)" > where ```n``` is the
+number of top ids requested in the command and ```m``` is the number 
+
+#### Data Transfer
+
 
 <br />
 <br />
 
 ## Possible Improvements
+Check disk space
+Have memory only option
+Relies too heavily on Range headers
