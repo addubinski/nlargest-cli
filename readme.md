@@ -160,22 +160,41 @@ which puts it at
  ```N``` which are close to the number of lines in the remote text file and will be 
  ![big O constant](https://render.githubusercontent.com/render/math?math=O(1)) for choices of ```N``` which are close to
  ```N = 1```. Therefore in the worst case, space complexity is 
- ![big O n](https://render.githubusercontent.com/render/math?math=O(n)).
+ ![big O n](https://render.githubusercontent.com/render/math?math=O(n)). It is worth noting too that each remote file is
+ compressed and cached on disk unless specified otherwise in the command.
 
 #### Time
 The sorting algorithm for the CLI uses a priority queue algorithm in which a min heap is populated with the first
  ```N``` elements in the collection of id, number pairs. The root of the heap is checked against the remaining numbers
  and replaced if the new number is greater than the root. This means the complexity if of order
 <img alt="big O log n m" src="https://render.githubusercontent.com/render/math?math=O(m\log(n)" > where ```n``` is the
-number of top ids requested in the command and ```m``` is the number 
+number of top ids requested in the command and ```m``` is the number of lines in the remote file. You may recognize that
+this gives the algorithm the property of running in 
+![big O n](https://render.githubusercontent.com/render/math?math=O(n)) time for choices of ```n``` which are close to
+1, and <img alt="big O log n m" src="https://render.githubusercontent.com/render/math?math=O(n\log(n)" > for choices of
+```n``` which are close to ```m```.
 
 #### Data Transfer
-
+The complexity of data transfer (over the network) is more straight forward as it occurs only once for each file unless
+the cache is cleared or ```--refresh-cache``` is specified. Therefore, each subsequent computation on a file after the
+initial transfer is much quicker and requires zero data transfer.
 
 <br />
 <br />
 
 ## Possible Improvements
-Check disk space
-Have memory only option
-Relies too heavily on Range headers
+#### Check disk space
+Currently the application does not check for available disk space or warn when disk space is becoming depleted after a 
+remote file is cached. Therefore a good improvement would be to at least warn the user if, after caching a remote 
+file, disk space is close to max capacity.
+
+#### Have memory only option
+Currently, if available memory is not an issue and the user would prefer to receive the entire remote file in one call
+they would need to specify the ```--chunk-size``` to be greater than the size of the file, which sometimes may be
+ unknown. Therefore an improvement would be to add a flag which will force the entire remote file to be downloaded at
+ once, regardless of size.
+
+#### Reliance on Range headers
+The functionality of receiving only a portion of a potentially large file is currently achieved with http ```Range```
+headers. This is efficient but requires the file's host to support such headers. Therefore it would be a good
+improvement which is more host agnostic such as using sockets to request part of the file instead of http headers.
