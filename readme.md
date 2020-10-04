@@ -188,6 +188,7 @@ file, ```test.py```. To run all tests and get results, navigate to the tes folde
 ```
 python test.py
 ```
+This can be done within the docker container or on your local machine.
 
 <br />
 <br />
