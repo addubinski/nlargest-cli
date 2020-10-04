@@ -51,7 +51,7 @@ def get(no_cache, refresh_cache, chunk_size, url, n):
     cache_root = Path(config[CACHE_PATH])
     file_name = get_remote_file(url, chunk_size, cache_root, refresh_cache)
     file = gzip.open((cache_root / file_name), 'rb')
-    n_largest = get_n_largest(file, n)
+    n_largest = get_n_largest(file, n)  # generators ensure space complexity is no grater than O(parameter n)
     print_n_largest(n_largest)
     file.close()
     if no_cache:

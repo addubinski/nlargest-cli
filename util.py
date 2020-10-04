@@ -17,6 +17,14 @@ class NoContentError(Exception):
 
 
 def get_n_largest(file, n):
+    """
+    Most of the heavy lifting of the CLI is done here.
+    This will populate the for n number of a min heap and then sequentially replace numbers in the min heap if a new
+    number is greater than the root. This takes at most O(nlog(n)) time.
+    :param file: a pointer to the remote file which is stored on local disk.
+    :param n: the number of ids, corresponding to the top n numbers found in the file, which will be reported.
+    :return: list(ids)
+    """
     return heapq.nlargest(n,  id_number_tuple_generator(file), key=itemgetter(1))
 
 
