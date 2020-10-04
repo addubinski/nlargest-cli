@@ -3,21 +3,21 @@
 An intuitive CLI to receive id, number pairs from a remote text file and print the ids of the highest N numbers in
 the file.
 
-:warning: This application currently relies on http header ```Range``` in order to protect available memory when dealing
- with very large files. When providing a url for a remote file, you must ensure the remote file's host supports
+:warning: This application currently relies on the ```Range``` http header in order to protect available memory when
+ dealing with very large files. When providing a url for a remote file, you must ensure the remote file's host supports
  ```Range``` headers. Known hosts which support such headers are AWS S3
  and GCP Cloud Storage.
 
 ## How It Works
-The N Largest CLI was built to minimize data transfer over the internet and memory usage while sorting an arbitrarily
-large dataset from a remote repository. Using http ```Range``` header only a small portion of the file is ever stored in
-memory. This behavior is also configurable via the CLI options, as large files will benefit from processing larger
- chunks at a time, granted there is enough available memory. Each remote file is compressed and cached on disk to
-to prevent potentially very large files from needing to be repeatedly sent over the network just to do the same
- (or similar) computation on them. The cache is also configurable (see the [clear-cache](#clear-cache) and 
+The N Largest CLI was built to minimize data transfer (over the network) as well as memory usage while sorting an
+ arbitrarily large dataset from a remote repository. Using the ```Range``` http header, only a small portion of the file 
+ is ever stored in memory. This behavior is also configurable via the CLI options, as large files will benefit from
+ processing larger chunks at a time, granted there is enough available memory. Each remote file is compressed and 
+ cached on disk to prevent potentially very large files from needing to be repeatedly sent over the network just to do
+ the same (or similar) computation on them. The cache is also configurable (see the [clear-cache](#clear-cache) and 
  [set-cache-dir](#set-cache-directory) commands). The sorting mechanism for the data received from the remote file uses
  a priority queue algorithm (also known as heap queue) to report the ids of the top N numbers. This has the benefit of
- being running in order of 
+ running in order of 
  <img alt="big O n log n" src="https://render.githubusercontent.com/render/math?math=O(n\log(n))">
   in the worst case and ![big O n](https://render.githubusercontent.com/render/math?math=O(n)) for certain choices of N.
    See the [complexity](#complexity) for more on this.
@@ -47,7 +47,7 @@ nlargest get [OPTIONS] URL N
 ##### Arguments
 * ```URL``` : The url starting with http(s) and using a fully qualified domain name leading to a text file. (Required)
 * ```N``` : The N number of ids corresponding to the N highest numbers in the remote text file. This number
-must be 1 or greater. If a N is greater than the number of ids in the text file, ```min(N, T)``` ids will be returned
+must be 1 or greater. If N is greater than the number of ids in the text file, ```min(N, T)``` ids will be returned
 where ```T``` refers to the total number of entries in the remote text file. (Required) 
 ###### Options
 * ```--help``` : Display help information.
@@ -182,6 +182,16 @@ initial transfer is much quicker and requires zero data transfer.
 <br />
 <br />
 
+## Testing
+Existing tests are located in the ```test``` directory in the root directory of the project. Inside is a single test
+file, ```test.py```. To run all tests and get results, navigate to the tes folder and simply run:
+```
+python test.py
+```
+
+<br />
+<br />
+
 ## Possible Improvements
 #### Check disk space
 Currently the application does not check for available disk space or warn when disk space is becoming depleted after a 
@@ -198,3 +208,8 @@ they would need to specify the ```--chunk-size``` to be greater than the size of
 The functionality of receiving only a portion of a potentially large file is currently achieved with http ```Range```
 headers. This is efficient but requires the file's host to support such headers. Therefore it would be a good
 improvement which is more host agnostic such as using sockets to request part of the file instead of http headers.
+
+#### Add Cache for Top N Id Results
+Currently the cache only stores the actual file optimize data transfer (and also runtime), but computation could be sped
+up even more if the cache also stored the results of computations, making requests for the same N on the a cached remote
+file run in ![big O constant](https://render.githubusercontent.com/render/math?math=O(1)) time.
