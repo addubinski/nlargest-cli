@@ -166,7 +166,7 @@ which puts it at
 #### Time
 The sorting algorithm for the CLI uses a priority queue algorithm in which a min heap is populated with the first
  ```N``` elements in the collection of id, number pairs. The root of the heap is checked against the remaining numbers
- and replaced if the new number is greater than the root. This means the complexity if of order
+ and replaced if the new number is greater than the root. This means the complexity is of order
 <img alt="big O log n m" src="https://render.githubusercontent.com/render/math?math=O(m\log(n)" > where ```n``` is the
 number of top ids requested in the command and ```m``` is the number of lines in the remote file. You may recognize that
 this gives the algorithm the property of running in 
