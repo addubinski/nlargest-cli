@@ -171,7 +171,7 @@ The sorting algorithm for the CLI uses a priority queue algorithm in which a min
 number of top ids requested in the command and ```m``` is the number of lines in the remote file. You may recognize that
 this gives the algorithm the property of running in 
 ![big O n](https://render.githubusercontent.com/render/math?math=O(n)) time for choices of ```n``` which are close to
-1, and <img alt="big O log n m" src="https://render.githubusercontent.com/render/math?math=O(n\log(n)" > for choices of
+1, and <img alt="big O log n m" src="https://render.githubusercontent.com/render/math?math=O(n\log(n))" > for choices of
 ```n``` which are close to ```m```.
 
 #### Data Transfer
