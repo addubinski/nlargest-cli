@@ -184,7 +184,7 @@ initial transfer is much quicker and requires zero data transfer.
 
 ## Testing
 Existing tests are located in the ```test``` directory in the root directory of the project. Inside is a single test
-file, ```test.py```. To run all tests and get results, navigate to the tes folder and simply run:
+file, ```test.py```. To run all tests and get results, navigate to the test folder and simply run:
 ```
 python test.py
 ```
@@ -211,6 +211,6 @@ headers. This is efficient but requires the file's host to support such headers.
 improvement which is more host agnostic such as using sockets to request part of the file instead of http headers.
 
 #### Add Cache for Top N Id Results
-Currently the cache only stores the actual file optimize data transfer (and also runtime), but computation could be sped
+Currently the cache only stores the actual file to optimize data transfer (and also runtime), but computation could be sped
 up even more if the cache also stored the results of computations, making requests for the same N on the a cached remote
 file run in ![big O constant](https://render.githubusercontent.com/render/math?math=O(1)) time.
